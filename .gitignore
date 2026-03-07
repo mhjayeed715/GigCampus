@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.db
+.env
+static/uploads/avatars/*
+static/uploads/deliverables/*
+static/uploads/gigs/*
+static/uploads/ids/*
+!static/uploads/avatars/.gitkeep
+!static/uploads/deliverables/.gitkeep
+!static/uploads/gigs/.gitkeep
+!static/uploads/ids/.gitkeep
