@@ -1,0 +1,202 @@
+{% extends "layout.html" %}
+{% block title %}GigCampus — Hire Your Batchmates, Earn from Your Skills{% endblock %}
+
+{% block content %}
+<!-- ===== HERO ===== -->
+<section class="hero-section mb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-7 text-center text-lg-start mb-4 mb-lg-0">
+            <span class="badge hero-badge mb-3"><i class="bi bi-shield-check me-1"></i>Verified Students Only &middot; Edu Email Required</span>
+            <h1 class="hero-title mb-3">
+                Hire your batchmates.<br>
+                <span class="text-warning">Earn from your skills.</span>
+            </h1>
+            <p class="hero-subtitle mb-4">
+                Bangladesh's first campus-only micro-gig platform.
+                Design, coding, tutoring, photography &amp; more — all from verified university students.
+                No outsiders. No fake profiles. Just real students helping real students.
+            </p>
+            <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                <a href="{{ url_for('gigs.index') }}" class="btn btn-warning btn-lg px-4 fw-semibold shadow">
+                    <i class="bi bi-search me-1"></i> Browse Gigs
+                </a>
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-person-plus me-1"></i> Join Free
+                </a>
+                {% else %}
+                <a href="{{ url_for('gigs.create') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-plus-circle me-1"></i> Post a Gig
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Trust badges -->
+            <div class="d-flex flex-wrap gap-3 mt-4 justify-content-center justify-content-lg-start">
+                <span class="trust-pill"><i class="bi bi-lock-fill"></i> Verified IDs</span>
+                <span class="trust-pill"><i class="bi bi-chat-dots-fill"></i> Real-time Chat</span>
+                <span class="trust-pill"><i class="bi bi-star-fill"></i> Peer Reviews</span>
+                <span class="trust-pill"><i class="bi bi-bolt-fill"></i> Ghost Protection</span>
+            </div>
+        </div>
+
+        <!-- Stats panel -->
+        <div class="col-lg-5">
+            <div class="stats-panel">
+                <div class="stat-block">
+                    <div class="stat-icon"><i class="bi bi-currency-exchange"></i></div>
+                    <div>
+                        <div class="stat-number text-warning" id="bdt-counter">0</div>
+                        <div class="stat-label">BDT Earned on Platform</div>
+                    </div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+                    <div>
+                        <div class="stat-number text-info" id="gigs-counter">0</div>
+                        <div class="stat-label">Gigs Completed</div>
+                    </div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                    <div>
+                        <div class="stat-number text-success" id="students-counter">0</div>
+                        <div class="stat-label">Verified Students</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== CATEGORIES ===== -->
+<section class="mb-5">
+    <h4 class="section-heading text-center mb-4">What can you find here?</h4>
+    <div class="row g-3 justify-content-center">
+        {% set cats = [
+          ('Design',       'bi-palette-fill',      '#e74c3c'),
+          ('Coding',       'bi-code-slash',        '#3498db'),
+          ('Writing',      'bi-pencil-fill',       '#9b59b6'),
+          ('Tutoring',     'bi-mortarboard-fill',  '#f39c12'),
+          ('Data Entry',   'bi-table',             '#1abc9c'),
+          ('Photography',  'bi-camera-fill',       '#e67e22'),
+          ('Translation',  'bi-translate',         '#2ecc71'),
+          ('Other',        'bi-three-dots',        '#95a5a6')
+        ] %}
+        {% for name, icon, color in cats %}
+        <div class="col-6 col-sm-4 col-md-3 col-lg-auto">
+            <a href="{{ url_for('gigs.index', category=name) }}" class="cat-chip" style="--cat-color: {{ color }}">
+                <i class="bi {{ icon }}"></i> {{ name }}
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="mb-5 hiw-section">
+    <h4 class="section-heading text-center mb-4">How GigCampus Works</h4>
+    <div class="row g-4 text-center">
+        <div class="col-md-3">
+            <div class="hiw-card">
+                <div class="hiw-step">1</div>
+                <div class="hiw-icon"><i class="bi bi-person-vcard"></i></div>
+                <h5 class="hiw-title">Register &amp; Verify</h5>
+                <p class="text-muted small">Sign up with your university edu email and upload your student ID. Admin verifies you're a real campus student.</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="hiw-card">
+                <div class="hiw-step">2</div>
+                <div class="hiw-icon text-info"><i class="bi bi-grid-fill"></i></div>
+                <h5 class="hiw-title">Browse &amp; Filter</h5>
+                <p class="text-muted small">Find gigs by skill, price range, and rating. Every seller is a verified student at a Bangladeshi university.</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="hiw-card">
+                <div class="hiw-step">3</div>
+                <div class="hiw-icon text-success"><i class="bi bi-chat-quote"></i></div>
+                <h5 class="hiw-title">Chat &amp; Agree</h5>
+                <p class="text-muted small">Message sellers in real-time, send a custom offer, and lock in your price before paying.</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="hiw-card">
+                <div class="hiw-step">4</div>
+                <div class="hiw-icon text-primary"><i class="bi bi-trophy"></i></div>
+                <h5 class="hiw-title">Deliver &amp; Review</h5>
+                <p class="text-muted small">Seller delivers work, you approve and leave a star review. Both sides build their campus reputation.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Gigs -->
+{% if featured %}
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="bi bi-fire text-danger"></i> Featured Gigs</h3>
+        <a href="{{ url_for('gigs.index') }}" class="btn btn-outline-dark btn-sm">View All &rarr;</a>
+    </div>
+    <div class="row g-4">
+        {% for gig in featured %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm gig-card">
+                <div class="card-body">
+                    <span class="badge bg-secondary mb-2">{{ gig.category }}</span>
+                    <h5 class="card-title">
+                        <a href="{{ url_for('gigs.detail', gig_id=gig.id) }}" class="text-decoration-none text-dark">
+                            {{ gig.title }}
+                        </a>
+                    </h5>
+                    <p class="card-text text-muted small">{{ gig.description[:100] }}{% if gig.description|length > 100 %}...{% endif %}</p>
+
+                    <div class="d-flex align-items-center mt-3">
+                        <div>
+                            <small class="text-muted">by</small>
+                            <a href="{{ url_for('profile.view', username=gig.seller_name) }}" class="text-decoration-none fw-bold">
+                                {{ gig.seller_name }}
+                            </a>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="text-warning">
+                                {% for i in range(5) %}
+                                    {% if i < gig.avg_rating|round|int %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                    <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-success">{{ gig.price_min|bdt }} – {{ gig.price_max|bdt }}</span>
+                    <small class="text-muted"><i class="bi bi-clock"></i> {{ gig.delivery_days }}d</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ===== CTA BANNER ===== -->
+{% if not current_user.is_authenticated %}
+<section class="cta-banner text-center mb-5">
+    <h3 class="fw-bold mb-2">Ready to start earning from your skills?</h3>
+    <p class="text-muted mb-4">Join thousands of Bangladeshi university students on the campus economy platform built for you.</p>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-warning btn-lg px-5 fw-semibold shadow">
+        <i class="bi bi-person-plus me-1"></i> Create Free Account
+    </a>
+    <p class="small text-muted mt-3 mb-0"><i class="bi bi-lock"></i> Requires a valid university edu email address</p>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/counter.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block title %}Register — GigCampus{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-person-plus text-warning"></i> Student Registration
+                </h2>
+                <p class="text-center text-muted mb-4">
+                    Upload your Student ID to get verified. You'll be able to post and order gigs once an admin approves your account.
+                </p>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   placeholder="e.g. rafiq_cse" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">University Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="name.studentid@university.ac.bd" required>
+                            <div class="form-text">Must be a valid university edu email address</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password"
+                                   minlength="6" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirmation" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmation" name="confirmation"
+                                   minlength="6" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="university" class="form-label">University</label>
+                            <input type="text" class="form-control" id="university" name="university"
+                                   placeholder="e.g. Shanto-Mariam University of Creative Technology" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="department" class="form-label">Department</label>
+                            <input type="text" class="form-control" id="department" name="department"
+                                   placeholder="e.g. CSE" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="year_of_study" class="form-label">Year of Study</label>
+                            <select class="form-select" id="year_of_study" name="year_of_study" required>
+                                <option value="">Select year...</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                                <option value="5">5th Year+</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="skills" class="form-label">Skills <small class="text-muted">(comma-separated)</small></label>
+                            <input type="text" class="form-control" id="skills" name="skills"
+                                   placeholder="e.g. Python, Logo Design, Translation">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="student_id_image" class="form-label">
+                                <i class="bi bi-card-image"></i> Student ID Photo
+                            </label>
+                            <input type="file" class="form-control" id="student_id_image" name="student_id_image"
+                                   accept=".png,.jpg,.jpeg,.gif,.pdf" required>
+                            <div class="form-text">Upload a clear photo of your Student ID card (PNG, JPG, or PDF).</div>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-warning w-100 btn-lg">
+                                <i class="bi bi-check-circle"></i> Submit Registration
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <p class="text-center mt-3 mb-0">
+                    Already have an account?
+                    <a href="{{ url_for('auth.login') }}">Log in here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

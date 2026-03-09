@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+{% block title %}{{ profile_user.username }} — GigCampus{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Profile Card -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm text-center">
+            <div class="card-body">
+                <i class="bi bi-person-circle display-1 text-muted"></i>
+                <h3 class="mt-3">{{ profile_user.username }}</h3>
+                <p class="text-muted mb-1">{{ profile_user.department }} · {{ profile_user.university }}</p>
+                <p class="text-muted small">Year {{ profile_user.year_of_study }}</p>
+
+                {% if profile_user.ghost_count > 0 %}
+                <span class="badge bg-danger mb-2">
+                    <i class="bi bi-exclamation-triangle"></i> Ghost Count: {{ profile_user.ghost_count }}
+                </span>
+                {% endif %}
+
+                <div class="text-warning mb-3">
+                    {% for i in range(5) %}
+                        {% if i < avg_rating|round|int %}
+                        <i class="bi bi-star-fill"></i>
+                        {% else %}
+                        <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="text-muted">({{ review_count }} reviews)</span>
+                </div>
+
+                <!-- Skills -->
+                {% if profile_user.skills_csv %}
+                <div class="mb-3">
+                    {% for skill in profile_user.skills_csv.split(',') %}
+                    <span class="badge bg-light text-dark border me-1 mb-1">{{ skill.strip() }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h5 class="mb-0 text-success">{{ completed_count }}</h5>
+                        <small class="text-muted">Orders Done</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="mb-0 text-warning">{{ avg_rating }}</h5>
+                        <small class="text-muted">Avg Rating</small>
+                    </div>
+                </div>
+
+                <p class="text-muted small mt-3 mb-0">
+                    <i class="bi bi-calendar3"></i> Joined {{ profile_user.created_at[:10] }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gigs & Reviews -->
+    <div class="col-lg-8">
+        <!-- Active Gigs -->
+        <h4 class="mb-3"><i class="bi bi-grid text-warning"></i> Active Gigs</h4>
+        {% if gigs %}
+        <div class="row g-3 mb-4">
+            {% for gig in gigs %}
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-secondary mb-1">{{ gig.category }}</span>
+                        <h6>
+                            <a href="{{ url_for('gigs.detail', gig_id=gig.id) }}" class="text-decoration-none text-dark">
+                                {{ gig.title }}
+                            </a>
+                        </h6>
+                        <span class="text-success small fw-bold">{{ gig.price_min|bdt }} – {{ gig.price_max|bdt }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-4">No active gigs.</p>
+        {% endif %}
+
+        <!-- Reviews -->
+        <h4 class="mb-3"><i class="bi bi-chat-quote text-warning"></i> Reviews</h4>
+        {% if reviews %}
+        {% for review in reviews %}
+        <div class="card shadow-sm mb-2">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between">
+                    <strong>{{ review.reviewer_name }}</strong>
+                    <span class="text-warning">
+                        {% for i in range(review.rating) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                        {% for i in range(5 - review.rating) %}<i class="bi bi-star"></i>{% endfor %}
+                    </span>
+                </div>
+                <p class="text-muted small mb-0">{{ review.comment or 'No comment.' }}</p>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted">No reviews yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
