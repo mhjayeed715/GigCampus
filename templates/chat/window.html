@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% block title %}Chat — GigCampus{% endblock %}
+
+{% block head %}
+<!-- Socket.IO client library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm">
+            <!-- Chat Header -->
+            <div class="card-header d-flex justify-content-between align-items-center bg-dark text-light">
+                <div>
+                    <i class="bi bi-chat-dots"></i>
+                    Chat with <strong>{{ other_user.username }}</strong>
+                    {% if gig %}
+                    <small class="text-muted ms-2">re: {{ gig.title }}</small>
+                    {% endif %}
+                </div>
+                {% if gig %}
+                <a href="{{ url_for('gigs.detail', gig_id=gig.id) }}" class="btn btn-outline-light btn-sm">
+                    View Gig
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Messages Area -->
+            <div class="card-body p-0">
+                <div id="chat-messages" class="chat-messages p-3" style="height: 450px; overflow-y: auto;">
+                    {% for msg in messages %}
+                    <div class="mb-3 d-flex {% if msg.sender_id == current_user.id %}justify-content-end{% endif %}">
+                        <div class="chat-bubble {% if msg.sender_id == current_user.id %}bg-warning text-dark{% else %}bg-light{% endif %} rounded p-3"
+                             style="max-width: 70%;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="fw-bold">{{ msg.sender_name }}</small>
+                                <small class="text-muted ms-2">{{ msg.created_at[11:16] }}</small>
+                            </div>
+
+                            {% if msg.msg_type == 'offer' %}
+                            <div class="alert alert-info mb-1 p-2">
+                                <i class="bi bi-tag"></i> <strong>Offer: {{ msg.offer_amount|bdt }}</strong>
+                                <p class="mb-0 small">{{ msg.body }}</p>
+                                {% if msg.offer_status == 'accepted' %}
+                                <span class="badge bg-success mt-1">Accepted</span>
+                                {% elif msg.sender_id != current_user.id and not msg.offer_status %}
+                                <div class="mt-2">
+                                    <button class="btn btn-success btn-sm accept-offer-btn"
+                                            data-message-id="{{ msg.id }}">
+                                        <i class="bi bi-check"></i> Accept
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm">Decline</button>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <p class="mb-0">{{ msg.body }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Message Input -->
+            <div class="card-footer">
+                <form id="chat-form" class="d-flex gap-2">
+                    <input type="text" class="form-control" id="msg-input"
+                           placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-send"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal"
+                            data-bs-target="#offerModal" title="Send Offer">
+                        <i class="bi bi-tag"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Offer Modal -->
+<div class="modal fade" id="offerModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send an Offer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Amount (BDT)</label>
+                    <input type="number" class="form-control" id="offer-amount" min="1" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Message</label>
+                    <input type="text" class="form-control" id="offer-message"
+                           placeholder="I can do this for...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" id="send-offer-btn">Send Offer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Pass data to chat.js
+    window.CHAT_CONFIG = {
+        conversationId: {{ conversation.id | tojson }},
+        currentUserId: {{ current_user.id | tojson }},
+        currentUsername: {{ current_user.username | tojson }}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

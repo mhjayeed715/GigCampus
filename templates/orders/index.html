@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+{% block title %}My Orders — GigCampus{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-receipt text-warning"></i> My Orders</h2>
+
+<!-- Tabs: As Buyer / As Seller -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#buying-tab" type="button">
+            <i class="bi bi-bag"></i> As Buyer ({{ buying|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#selling-tab" type="button">
+            <i class="bi bi-shop"></i> As Seller ({{ selling|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Buying Tab -->
+    <div class="tab-pane fade show active" id="buying-tab">
+        {% if buying %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Gig</th>
+                        <th>Seller</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in buying %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.gig_title }}</td>
+                        <td>{{ order.seller_name }}</td>
+                        <td>{{ order.agreed_price|bdt }}</td>
+                        <td>
+                            {% set status_colors = {
+                                'PENDING': 'warning',
+                                'ACCEPTED': 'info',
+                                'IN_PROGRESS': 'primary',
+                                'DELIVERED': 'success',
+                                'APPROVED': 'success',
+                                'DISPUTED': 'danger',
+                                'CANCELLED': 'secondary'
+                            } %}
+                            <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                        <td><small>{{ order.created_at[:10] }}</small></td>
+                        <td>
+                            <a href="{{ url_for('orders.detail', order_id=order.id) }}"
+                               class="btn btn-outline-dark btn-sm">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-bag display-4"></i>
+            <p class="mt-2">No orders as a buyer yet.</p>
+            <a href="{{ url_for('gigs.index') }}" class="btn btn-warning btn-sm">Browse Gigs</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Selling Tab -->
+    <div class="tab-pane fade" id="selling-tab">
+        {% if selling %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Gig</th>
+                        <th>Buyer</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in selling %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.gig_title }}</td>
+                        <td>{{ order.buyer_name }}</td>
+                        <td>{{ order.agreed_price|bdt }}</td>
+                        <td>
+                            <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                        <td><small>{{ order.created_at[:10] }}</small></td>
+                        <td>
+                            <a href="{{ url_for('orders.detail', order_id=order.id) }}"
+                               class="btn btn-outline-dark btn-sm">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-shop display-4"></i>
+            <p class="mt-2">No orders as a seller yet.</p>
+            <a href="{{ url_for('gigs.create') }}" class="btn btn-warning btn-sm">Post a Gig</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
