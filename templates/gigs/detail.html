@@ -1,0 +1,242 @@
+{% extends "layout.html" %}
+{% block title %}{{ gig.title }} — GigCampus{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('gigs.index') }}">Gigs</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('gigs.index', category=gig.category) }}">{{ gig.category }}</a></li>
+                <li class="breadcrumb-item active">{{ gig.title }}</li>
+            </ol>
+        </nav>
+
+        <h2 class="mb-2">{{ gig.title }}</h2>
+        <div class="mb-3">
+            <span class="badge bg-secondary">{{ gig.category }}</span>
+            <span class="text-warning ms-2">
+                {% for i in range(5) %}
+                    {% if i < gig.avg_rating|round|int %}
+                    <i class="bi bi-star-fill"></i>
+                    {% else %}
+                    <i class="bi bi-star"></i>
+                    {% endif %}
+                {% endfor %}
+                <span class="text-muted">({{ gig.review_count }} reviews)</span>
+            </span>
+        </div>
+
+        <!-- Portfolio Images -->
+        {% if images %}
+        <div class="mb-4">
+            <div class="row g-2">
+                {% for img in images %}
+                <div class="col-md-4">
+                    <img src="{{ url_for('static', filename='uploads/gigs/' + img.image_path) }}"
+                         class="img-fluid rounded shadow-sm" alt="Portfolio image">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Description -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>About This Gig</h5>
+                <p class="mb-0">{{ gig.description }}</p>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h6 class="text-muted small">PRICE RANGE</h6>
+                        <span class="fw-bold text-success">{{ gig.price_min|bdt }} – {{ gig.price_max|bdt }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted small">DELIVERY</h6>
+                        <span class="fw-bold">{{ gig.delivery_days }} day{{ 's' if gig.delivery_days > 1 }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted small">LOCATION</h6>
+                        <span>{{ gig.campus_location or 'Not specified' }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted small">POSTED</h6>
+                        <span>{{ gig.created_at[:10] }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews -->
+        {% if reviews %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-chat-quote"></i> Recent Reviews</h5>
+            </div>
+            <div class="card-body">
+                {% for review in reviews %}
+                <div class="{% if not loop.last %}border-bottom pb-3 mb-3{% endif %}">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ review.reviewer_name }}</strong>
+                        <span class="text-warning">
+                            {% for i in range(review.rating) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                            {% for i in range(5 - review.rating) %}<i class="bi bi-star"></i>{% endfor %}
+                        </span>
+                    </div>
+                    <p class="text-muted mb-0 mt-1">{{ review.comment or 'No comment.' }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Seller Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-person-circle display-4 text-muted"></i>
+                </div>
+                <h5>
+                    <a href="{{ url_for('profile.view', username=gig.seller_name) }}" class="text-decoration-none">
+                        {{ gig.seller_name }}
+                    </a>
+                </h5>
+                <p class="text-muted small mb-1">{{ gig.seller_department }} · {{ gig.seller_university }}</p>
+
+                {% if gig.seller_ghost_count > 0 %}
+                <span class="badge bg-danger mb-2">
+                    <i class="bi bi-exclamation-triangle"></i> Ghost Count: {{ gig.seller_ghost_count }}
+                </span>
+                {% endif %}
+
+                <div class="text-warning">
+                    {% for i in range(5) %}
+                        {% if i < gig.avg_rating|round|int %}
+                        <i class="bi bi-star-fill"></i>
+                        {% else %}
+                        <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="text-muted">({{ gig.review_count }})</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        {% if current_user.is_authenticated %}
+            {% if current_user.id != gig.seller_id %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <!-- Message Seller -->
+                    <form method="POST" action="{{ url_for('chat.start_conversation', gig_id=gig.id) }}" class="mb-3">
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-chat-dots"></i> Message Seller
+                        </button>
+                    </form>
+
+                    <!-- Place Order -->
+                    <button type="button" class="btn btn-warning w-100 mb-3" data-bs-toggle="modal" data-bs-target="#orderModal">
+                        <i class="bi bi-bag-check"></i> Place Order
+                    </button>
+
+                    <!-- Wishlist Toggle -->
+                    <button type="button" class="btn btn-outline-danger w-100" id="wishlist-btn"
+                            data-gig-id="{{ gig.id }}">
+                        <i class="bi bi-heart{% if is_wishlisted %}-fill{% endif %}"></i>
+                        {{ 'Saved' if is_wishlisted else 'Save for Later' }}
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body text-center text-muted">
+                    <i class="bi bi-info-circle"></i> This is your gig.
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-body text-center">
+                <p class="text-muted">Log in to place an order or message the seller.</p>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-warning w-100">Log In</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Order Modal -->
+{% if current_user.is_authenticated and current_user.id != gig.seller_id %}
+<div class="modal fade" id="orderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('orders.create') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Place Order — {{ gig.title }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="gig_id" value="{{ gig.id }}">
+
+                    <div class="mb-3">
+                        <label class="form-label">Agreed Price (BDT)</label>
+                        <input type="number" class="form-control" name="agreed_price"
+                               min="{{ gig.price_min }}" max="{{ gig.price_max }}"
+                               value="{{ gig.price_min }}" required>
+                        <div class="form-text">Range: {{ gig.price_min|bdt }} – {{ gig.price_max|bdt }}</div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="payment-pledge" required>
+                        <label class="form-check-label" for="payment-pledge">
+                            I commit to paying the agreed amount upon delivery approval.
+                            (Payment is handled off-platform.)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-bag-check"></i> Confirm Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Wishlist toggle (AJAX)
+    const wishBtn = document.getElementById('wishlist-btn');
+    if (wishBtn) {
+        wishBtn.addEventListener('click', function() {
+            const gigId = this.dataset.gigId;
+            fetch(`/gigs/${gigId}/wishlist`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    const icon = this.querySelector('i');
+                    if (data.saved) {
+                        icon.className = 'bi bi-heart-fill';
+                        this.innerHTML = '<i class="bi bi-heart-fill"></i> Saved';
+                    } else {
+                        icon.className = 'bi bi-heart';
+                        this.innerHTML = '<i class="bi bi-heart"></i> Save for Later';
+                    }
+                });
+        });
+    }
+</script>
+{% endblock %}

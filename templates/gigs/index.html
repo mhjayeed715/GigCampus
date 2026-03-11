@@ -1,0 +1,138 @@
+{% extends "layout.html" %}
+{% block title %}Browse Gigs — GigCampus{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-grid text-warning"></i> Browse Gigs</h2>
+
+<!-- Filter Bar -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('gigs.index') }}" id="filter-form">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Category</label>
+                    <select class="form-select form-select-sm" name="category" id="filter-category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Max Price (BDT)</label>
+                    <input type="number" class="form-control form-control-sm" name="price_max"
+                           id="filter-price" value="{{ price_max }}" placeholder="e.g. 5000" min="0">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Min Rating</label>
+                    <select class="form-select form-select-sm" name="min_rating" id="filter-rating">
+                        <option value="">Any</option>
+                        <option value="3" {% if min_rating == '3' %}selected{% endif %}>3+ Stars</option>
+                        <option value="4" {% if min_rating == '4' %}selected{% endif %}>4+ Stars</option>
+                        <option value="4.5" {% if min_rating == '4.5' %}selected{% endif %}>4.5+ Stars</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Search</label>
+                    <input type="text" class="form-control form-control-sm" name="q"
+                           id="filter-keyword" value="{{ keyword }}" placeholder="Keyword...">
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-warning btn-sm flex-fill">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('gigs.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Gig Grid -->
+{% if gigs %}
+<div class="row g-4">
+    {% for gig in gigs %}
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 shadow-sm gig-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-secondary">{{ gig.category }}</span>
+                    {% if gig.seller_ghost_count > 0 %}
+                    <span class="badge bg-danger" title="This seller has received ghost flags">
+                        <i class="bi bi-exclamation-triangle"></i> Ghost: {{ gig.seller_ghost_count }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <h6 class="card-title">
+                    <a href="{{ url_for('gigs.detail', gig_id=gig.id) }}" class="text-decoration-none text-dark">
+                        {{ gig.title }}
+                    </a>
+                </h6>
+                <p class="card-text text-muted small mb-2">
+                    {{ gig.description[:80] }}{% if gig.description|length > 80 %}...{% endif %}
+                </p>
+
+                <div class="d-flex align-items-center">
+                    <a href="{{ url_for('profile.view', username=gig.seller_name) }}" class="text-decoration-none small">
+                        <i class="bi bi-person-circle"></i> {{ gig.seller_name }}
+                    </a>
+                    <div class="ms-auto text-warning small">
+                        {% for i in range(5) %}
+                            {% if i < gig.avg_rating|round|int %}
+                            <i class="bi bi-star-fill"></i>
+                            {% else %}
+                            <i class="bi bi-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="text-muted">({{ gig.review_count }})</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-success small">{{ gig.price_min|bdt }} – {{ gig.price_max|bdt }}</span>
+                <small class="text-muted"><i class="bi bi-clock"></i> {{ gig.delivery_days }}d</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ page - 1 }}&category={{ selected_category }}&price_max={{ price_max }}&min_rating={{ min_rating }}&q={{ keyword }}">Previous</a>
+        </li>
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}&category={{ selected_category }}&price_max={{ price_max }}&min_rating={{ min_rating }}&q={{ keyword }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ page + 1 }}&category={{ selected_category }}&price_max={{ price_max }}&min_rating={{ min_rating }}&q={{ keyword }}">Next</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-inbox display-1 text-muted"></i>
+    <h4 class="mt-3 text-muted">No gigs found</h4>
+    <p class="text-muted">Try adjusting your filters or check back later.</p>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('gigs.create') }}" class="btn btn-warning">
+        <i class="bi bi-plus-circle"></i> Be the first to post a gig!
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/filters.js') }}"></script>
+{% endblock %}
