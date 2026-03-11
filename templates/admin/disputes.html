@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+{% block title %}Admin Disputes — GigCampus{% endblock %}
+
+{% block content %}
+<!-- Admin header -->
+<div class="admin-header d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold"><i class="bi bi-shield-fill-check text-warning me-2"></i>Admin Panel</h2>
+        <p class="text-muted mb-0 small">Manage student verifications and disputes</p>
+    </div>
+</div>
+
+<!-- Tab nav -->
+<ul class="nav nav-pills mb-4 admin-tabs">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin.pending') }}">
+            <i class="bi bi-person-check me-1"></i>Verifications
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('admin.disputes') }}">
+            <i class="bi bi-flag me-1"></i>Disputes
+            {% if disputes|length > 0 %}
+            <span class="badge bg-danger ms-1">{{ disputes|length }}</span>
+            {% endif %}
+        </a>
+    </li>
+</ul>
+
+{% if disputes %}
+<div class="d-flex flex-column gap-3">
+{% for dispute in disputes %}
+<div class="card admin-dispute-card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold">Dispute #{{ dispute.id }}</span>
+            <span class="text-muted small">— Order #{{ dispute.order_id }}</span>
+            <span class="badge bg-{{ 'warning text-dark' if dispute.status == 'pending' else ('success' if dispute.status == 'resolved' else 'secondary') }}">
+                {{ dispute.status|upper }}
+            </span>
+        </div>
+        <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ dispute.created_at }}</small>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <div class="admin-detail-box">
+                    <i class="bi bi-person text-danger"></i>
+                    <div>
+                        <div class="small fw-semibold">Raised by</div>
+                        <div class="small text-muted">{{ dispute.raised_by_name }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="admin-detail-box">
+                    <i class="bi bi-briefcase text-primary"></i>
+                    <div>
+                        <div class="small fw-semibold">Gig</div>
+                        <div class="small text-muted">{{ dispute.gig_title }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="admin-detail-box">
+                    <i class="bi bi-currency-exchange text-success"></i>
+                    <div>
+                        <div class="small fw-semibold">Amount</div>
+                        <div class="small text-muted">{{ dispute.agreed_price|bdt }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border mb-3">
+            <strong><i class="bi bi-chat-quote me-1"></i>Reason:</strong> {{ dispute.reason }}
+            {% if dispute.evidence_text %}
+            <p class="mt-2 mb-0"><strong>Details:</strong> {{ dispute.evidence_text }}</p>
+            {% endif %}
+        </div>
+
+        {% if dispute.status == 'pending' %}
+        <form method="POST" action="{{ url_for('admin.resolve_dispute', dispute_id=dispute.id) }}">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Admin Resolution Note</label>
+                <textarea class="form-control" name="admin_note" rows="2"
+                          placeholder="Write your decision / reason for resolution..."></textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="resolved" class="btn btn-success fw-semibold">
+                    <i class="bi bi-check-circle-fill me-1"></i> Mark Resolved
+                </button>
+                <button type="submit" name="action" value="dismissed" class="btn btn-secondary fw-semibold">
+                    <i class="bi bi-x-circle me-1"></i> Dismiss
+                </button>
+            </div>
+        </form>
+        {% elif dispute.admin_note %}
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-shield-check me-1"></i><strong>Admin Note:</strong> {{ dispute.admin_note }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <div class="admin-empty-icon">
+        <i class="bi bi-shield-check text-success"></i>
+    </div>
+    <h4 class="mt-3 fw-bold">No disputes!</h4>
+    <p class="text-muted">The platform is running smoothly with no open disputes.</p>
+</div>
+{% endif %}
+{% endblock %}
+

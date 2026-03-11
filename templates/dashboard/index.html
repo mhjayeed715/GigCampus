@@ -1,0 +1,205 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard — GigCampus{% endblock %}
+
+{% block head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">
+    <i class="bi bi-speedometer2 text-warning"></i> Dashboard
+    <small class="text-muted fs-6">Welcome, {{ current_user.username }}!</small>
+</h2>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-success">
+            <div class="card-body">
+                <h3 class="text-success mb-0">{{ total_earned|bdt }}</h3>
+                <small class="text-muted">Total Earned</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-info">
+            <div class="card-body">
+                <h3 class="text-info mb-0">{{ total_spent|bdt }}</h3>
+                <small class="text-muted">Total Spent</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h3 class="mb-0">{{ active_gig_count }}</h3>
+                <small class="text-muted">Active Gigs</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h3 class="mb-0">{{ completed_count }}</h3>
+                <small class="text-muted">Completed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h3 class="mb-0">{{ completion_rate }}%</h3>
+                <small class="text-muted">Rate</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-warning">
+            <div class="card-body">
+                <div class="text-warning">
+                    {% for i in range(5) %}
+                        {% if i < avg_rating|round|int %}
+                        <i class="bi bi-star-fill"></i>
+                        {% else %}
+                        <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <h4 class="mt-1 mb-0">{{ avg_rating }}</h4>
+                <small class="text-muted">Avg Rating ({{ review_count }} reviews)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Gap Chart -->
+    <div class="col-md-9">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Skill Supply vs Demand</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="skillGapChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Two columns: My Gigs + Recent Activity -->
+<div class="row g-4">
+    <!-- My Gigs -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-grid"></i> My Gigs</h5>
+                <a href="{{ url_for('gigs.create') }}" class="btn btn-warning btn-sm">
+                    <i class="bi bi-plus"></i> New
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if my_gigs %}
+                <div class="list-group list-group-flush">
+                    {% for gig in my_gigs %}
+                    <a href="{{ url_for('gigs.detail', gig_id=gig.id) }}"
+                       class="list-group-item list-group-item-action d-flex justify-content-between">
+                        <div>
+                            <strong>{{ gig.title }}</strong>
+                            <br><small class="text-muted">{{ gig.category }}</small>
+                        </div>
+                        <span class="badge bg-{{ 'success' if gig.status == 'active' else 'secondary' }} align-self-center">
+                            {{ gig.status }}
+                        </span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p>No gigs yet. <a href="{{ url_for('gigs.create') }}">Post one!</a></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Orders</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if recent %}
+                <div class="list-group list-group-flush">
+                    {% for order in recent %}
+                    <a href="{{ url_for('orders.detail', order_id=order.id) }}"
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ order.gig_title }}</strong>
+                            {% set status_colors = {
+                                'PENDING': 'warning', 'ACCEPTED': 'info',
+                                'IN_PROGRESS': 'primary', 'DELIVERED': 'success',
+                                'APPROVED': 'success', 'DISPUTED': 'danger',
+                                'CANCELLED': 'secondary'
+                            } %}
+                            <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                {{ order.status }}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            {{ order.buyer_name }} → {{ order.seller_name }} · {{ order.agreed_price|bdt }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p>No orders yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fetch skill-gap data and render Chart.js bar chart
+    fetch('/skill-gap')
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('skillGapChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.category),
+                    datasets: [
+                        {
+                            label: 'Demand (Orders/30d)',
+                            data: data.map(d => d.demand),
+                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Supply (Active Sellers)',
+                            data: data.map(d => d.supply),
+                            backgroundColor: 'rgba(13, 202, 240, 0.7)',
+                            borderColor: 'rgba(13, 202, 240, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+        });
+</script>
+{% endblock %}

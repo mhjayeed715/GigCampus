@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+{% block title %}Admin Panel — GigCampus{% endblock %}
+
+{% block content %}
+<!-- Admin header -->
+<div class="admin-header d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold"><i class="bi bi-shield-fill-check text-warning me-2"></i>Admin Panel</h2>
+        <p class="text-muted mb-0 small">Manage student verifications and disputes</p>
+    </div>
+    <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+        <i class="bi bi-person-exclamation me-1"></i>{{ users|length }} Pending
+    </span>
+</div>
+
+<!-- Tab nav -->
+<ul class="nav nav-pills mb-4 admin-tabs">
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('admin.pending') }}">
+            <i class="bi bi-person-check me-1"></i>Verifications
+            {% if users|length > 0 %}
+            <span class="badge bg-danger ms-1">{{ users|length }}</span>
+            {% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin.disputes') }}">
+            <i class="bi bi-flag me-1"></i>Disputes
+        </a>
+    </li>
+</ul>
+
+{% if users %}
+<div class="row g-4">
+    {% for user in users %}
+    <div class="col-lg-6">
+        <div class="card admin-user-card shadow-sm h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="admin-avatar">
+                        {{ user.username[0]|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-bold">{{ user.username }}</div>
+                        <small class="text-muted">{{ user.email }}</small>
+                    </div>
+                </div>
+                <span class="badge bg-warning text-dark">Pending</span>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="admin-detail-box">
+                            <i class="bi bi-building text-primary"></i>
+                            <div>
+                                <div class="small fw-semibold">University</div>
+                                <div class="small text-muted">{{ user.university }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="admin-detail-box">
+                            <i class="bi bi-mortarboard text-info"></i>
+                            <div>
+                                <div class="small fw-semibold">Department</div>
+                                <div class="small text-muted">{{ user.department }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="admin-detail-box">
+                            <i class="bi bi-calendar3 text-success"></i>
+                            <div>
+                                <div class="small fw-semibold">Year</div>
+                                <div class="small text-muted">Year {{ user.year_of_study }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="admin-detail-box">
+                            <i class="bi bi-tags text-warning"></i>
+                            <div>
+                                <div class="small fw-semibold">Skills</div>
+                                <div class="small text-muted">{{ user.skills_csv or 'None listed' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if user.student_id_image %}
+                <a href="{{ url_for('static', filename='uploads/ids/' + user.student_id_image) }}"
+                   target="_blank" class="btn btn-outline-secondary btn-sm w-100 mb-3">
+                    <i class="bi bi-card-image me-1"></i> View Student ID Card
+                </a>
+                {% endif %}
+
+                <div class="d-grid gap-2 d-md-flex">
+                    <form method="POST" action="{{ url_for('admin.verify', user_id=user.id) }}" class="flex-fill">
+                        <button type="submit" class="btn btn-success w-100 fw-semibold">
+                            <i class="bi bi-check-circle-fill me-1"></i> Verify Student
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.reject', user_id=user.id) }}"
+                          onsubmit="return confirm('Permanently reject and delete this registration?')"
+                          class="flex-fill">
+                        <button type="submit" class="btn btn-danger w-100 fw-semibold">
+                            <i class="bi bi-x-circle-fill me-1"></i> Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card-footer text-muted small">
+                <i class="bi bi-clock me-1"></i>Registered: {{ user.created_at }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <div class="admin-empty-icon">
+        <i class="bi bi-check-circle-fill text-success"></i>
+    </div>
+    <h4 class="mt-3 fw-bold">All caught up!</h4>
+    <p class="text-muted">No students are currently waiting for verification.</p>
+    <a href="{{ url_for('admin.disputes') }}" class="btn btn-outline-danger mt-2">
+        <i class="bi bi-flag me-1"></i>Check Disputes
+    </a>
+</div>
+{% endif %}
+{% endblock %}
