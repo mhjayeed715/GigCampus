@@ -29,8 +29,8 @@ def create_app():
         os.makedirs(os.path.join(app.config["UPLOAD_FOLDER"], sub), exist_ok=True)
 
     login_manager.init_app(app)
-    # eventlet on Render for WebSocket support, threading locally
-    mode = "eventlet" if os.environ.get("RENDER") else "threading"
+    # gevent on Render for WebSocket support, threading locally
+    mode = "gevent" if os.environ.get("RENDER") else "threading"
     socketio.init_app(app, async_mode=mode)
 
     from models import init_db, get_db

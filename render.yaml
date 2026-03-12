@@ -3,7 +3,7 @@ services:
     name: gigcampus
     runtime: python
     buildCommand: ./build.sh
-    startCommand: gunicorn -k eventlet -w 1 --bind 0.0.0.0:$PORT run:app
+    startCommand: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 --bind 0.0.0.0:$PORT run:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
