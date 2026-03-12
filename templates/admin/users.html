@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+{% block title %}All Users — Admin — GigCampus{% endblock %}
+
+{% block content %}
+<div class="admin-header d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold"><i class="bi bi-shield-fill-check text-warning me-2"></i>Admin Panel</h2>
+        <p class="text-muted mb-0 small">Manage all registered users</p>
+    </div>
+    <span class="badge bg-primary fs-6 px-3 py-2">
+        <i class="bi bi-people me-1"></i>{{ users|length }} Users
+    </span>
+</div>
+
+<!-- Tab nav -->
+<ul class="nav nav-pills mb-4 admin-tabs">
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin.pending') }}">
+            <i class="bi bi-person-check me-1"></i>Verifications
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('admin.disputes') }}">
+            <i class="bi bi-flag me-1"></i>Disputes
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{{ url_for('admin.users') }}">
+            <i class="bi bi-people me-1"></i>All Users
+        </a>
+    </li>
+</ul>
+
+<!-- Search -->
+<form method="GET" class="mb-4">
+    <div class="input-group" style="max-width: 400px;">
+        <input type="text" class="form-control" name="q" placeholder="Search by username or email..."
+               value="{{ search }}">
+        <button class="btn btn-outline-warning" type="submit"><i class="bi bi-search"></i></button>
+        {% if search %}
+        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if users %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>University</th>
+                <th>Status</th>
+                <th>Ghost</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>
+                    <a href="{{ url_for('profile.view', username=user.username) }}" class="text-decoration-none">
+                        {{ user.username }}
+                    </a>
+                    {% if user.is_admin %}
+                    <span class="badge bg-warning text-dark ms-1">Admin</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted small">{{ user.email }}</td>
+                <td class="small">{{ user.university }}</td>
+                <td>
+                    {% if user.is_verified %}
+                    <span class="badge bg-success">Verified</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.ghost_count > 0 %}
+                    <span class="badge bg-danger">{{ user.ghost_count }}</span>
+                    {% else %}
+                    <span class="text-muted">0</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted small">{{ user.created_at[:10] }}</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                           class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        {% if not user.is_admin %}
+                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                              onsubmit="return confirm('Delete user \'{{ user.username }}\'? This cannot be undone.');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-people display-1 text-muted"></i>
+    <h4 class="mt-3">No users found</h4>
+    {% if search %}
+    <p class="text-muted">No results for "{{ search }}"</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

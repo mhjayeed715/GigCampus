@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from models import get_db
 from helpers import flash_error, flash_success
+from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -105,3 +106,115 @@ def resolve_dispute(dispute_id):
 
     flash_success(f"Dispute has been {action}.")
     return redirect(url_for("admin.disputes"))
+
+
+# --- User management ---
+
+@admin_bp.route("/admin/users")
+@login_required
+@admin_required
+def users():
+    db = get_db()
+    q = request.args.get("q", "").strip()
+
+    if q:
+        user_list = db.execute(
+            "SELECT * FROM users WHERE username LIKE ? OR email LIKE ? ORDER BY created_at DESC",
+            f"%{q}%", f"%{q}%"
+        )
+    else:
+        user_list = db.execute("SELECT * FROM users ORDER BY created_at DESC")
+
+    return render_template("admin/users.html", users=user_list, search=q)
+
+
+@admin_bp.route("/admin/users/<int:user_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_required
+def edit_user(user_id):
+    db = get_db()
+
+    rows = db.execute("SELECT * FROM users WHERE id = ?", user_id)
+    if not rows:
+        flash_error("User not found.")
+        return redirect(url_for("admin.users"))
+
+    user = rows[0]
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        university = request.form.get("university", "").strip()
+        department = request.form.get("department", "").strip()
+        year_of_study = request.form.get("year_of_study", "")
+        is_verified = 1 if request.form.get("is_verified") else 0
+        is_admin = 1 if request.form.get("is_admin") else 0
+        ghost_count = request.form.get("ghost_count", "0")
+        new_password = request.form.get("new_password", "").strip()
+
+        if not all([username, email, university, department, year_of_study]):
+            flash_error("Required fields cannot be empty.")
+            return render_template("admin/edit_user.html", user=user)
+
+        # check unique username/email (excluding this user)
+        dup = db.execute(
+            "SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?",
+            username, email, user_id
+        )
+        if dup:
+            flash_error("Username or email already taken by another user.")
+            return render_template("admin/edit_user.html", user=user)
+
+        try:
+            ghost_int = max(0, int(ghost_count))
+        except ValueError:
+            ghost_int = user["ghost_count"]
+
+        db.execute(
+            "UPDATE users SET username = ?, email = ?, university = ?, department = ?, "
+            "year_of_study = ?, is_verified = ?, is_admin = ?, ghost_count = ? WHERE id = ?",
+            username, email, university, department,
+            year_of_study, is_verified, is_admin, ghost_int, user_id
+        )
+
+        if new_password:
+            pw_hash = generate_password_hash(new_password)
+            db.execute("UPDATE users SET password_hash = ? WHERE id = ?", pw_hash, user_id)
+
+        flash_success(f"User '{username}' updated.")
+        return redirect(url_for("admin.users"))
+
+    return render_template("admin/edit_user.html", user=user)
+
+
+@admin_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def delete_user(user_id):
+    db = get_db()
+
+    user = db.execute("SELECT id, username, is_admin FROM users WHERE id = ?", user_id)
+    if not user:
+        flash_error("User not found.")
+        return redirect(url_for("admin.users"))
+
+    if user[0]["is_admin"]:
+        flash_error("Cannot delete an admin account.")
+        return redirect(url_for("admin.users"))
+
+    # check for active orders
+    active = db.execute(
+        "SELECT id FROM orders WHERE (buyer_id = ? OR seller_id = ?) "
+        "AND status NOT IN ('COMPLETED', 'CANCELLED')",
+        user_id, user_id
+    )
+    if active:
+        flash_error("Cannot delete user with active orders.")
+        return redirect(url_for("admin.users"))
+
+    username = user[0]["username"]
+    db.execute("DELETE FROM wishlists WHERE user_id = ?", user_id)
+    db.execute("DELETE FROM users WHERE id = ?", user_id)
+
+    flash_success(f"User '{username}' deleted.")
+    return redirect(url_for("admin.users"))
