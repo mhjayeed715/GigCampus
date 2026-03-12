@@ -240,3 +240,75 @@ def handle_accept_offer(data):
         "order_id": order_id,
         "accepted_by": current_user.username
     }, room=str(msg["conversation_id"]))
+
+
+# HTTP fallback for accept/decline (more reliable than WebSocket on some hosts)
+@chat_bp.route("/chat/offer/<int:message_id>/accept", methods=["POST"])
+@login_required
+def accept_offer_http(message_id):
+    db = get_db()
+
+    msg = db.execute("SELECT * FROM messages WHERE id = ? AND msg_type = 'offer'", message_id)
+    if not msg:
+        flash_error("Offer not found.")
+        return redirect(url_for("chat.inbox"))
+    msg = msg[0]
+
+    conv = db.execute("SELECT * FROM conversations WHERE id = ?", msg["conversation_id"])
+    if not conv:
+        flash_error("Conversation not found.")
+        return redirect(url_for("chat.inbox"))
+    conv = conv[0]
+
+    if current_user.id != conv["buyer_id"]:
+        flash_error("Only the buyer can accept an offer.")
+        return redirect(url_for("chat.window", conversation_id=conv["id"]))
+
+    if msg["offer_status"] == "accepted":
+        flash_error("This offer was already accepted.")
+        return redirect(url_for("chat.window", conversation_id=conv["id"]))
+
+    db.execute("UPDATE messages SET offer_status = 'accepted' WHERE id = ?", message_id)
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    order_id = db.execute(
+        "INSERT INTO orders (gig_id, buyer_id, seller_id, agreed_price, status, payment_confirmed_at) "
+        "VALUES (?, ?, ?, ?, 'PENDING', ?)",
+        conv["gig_id"], conv["buyer_id"], conv["seller_id"], msg["offer_amount"], now
+    )
+
+    db.execute(
+        "INSERT INTO order_history (order_id, old_status, new_status, changed_by, note) "
+        "VALUES (?, NULL, 'PENDING', ?, 'Order created from chat offer')",
+        order_id, current_user.id
+    )
+
+    flash_success("Offer accepted! Order created.")
+    return redirect(url_for("orders.detail", order_id=order_id))
+
+
+@chat_bp.route("/chat/offer/<int:message_id>/decline", methods=["POST"])
+@login_required
+def decline_offer_http(message_id):
+    db = get_db()
+
+    msg = db.execute("SELECT * FROM messages WHERE id = ? AND msg_type = 'offer'", message_id)
+    if not msg:
+        flash_error("Offer not found.")
+        return redirect(url_for("chat.inbox"))
+    msg = msg[0]
+
+    conv = db.execute("SELECT * FROM conversations WHERE id = ?", msg["conversation_id"])
+    if not conv:
+        flash_error("Conversation not found.")
+        return redirect(url_for("chat.inbox"))
+    conv = conv[0]
+
+    if current_user.id != conv["buyer_id"]:
+        flash_error("Only the buyer can decline an offer.")
+        return redirect(url_for("chat.window", conversation_id=conv["id"]))
+
+    db.execute("UPDATE messages SET offer_status = 'declined' WHERE id = ?", message_id)
+
+    flash_success("Offer declined.")
+    return redirect(url_for("chat.window", conversation_id=conv["id"]))
