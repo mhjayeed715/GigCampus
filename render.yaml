@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gigcampus
+    runtime: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn -k eventlet -w 1 --bind 0.0.0.0:$PORT run:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.11
