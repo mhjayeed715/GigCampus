@@ -99,6 +99,15 @@
                         <td>{{ order.buyer_name }}</td>
                         <td>{{ order.agreed_price|bdt }}</td>
                         <td>
+                            {% set status_colors = {
+                                'PENDING': 'warning',
+                                'ACCEPTED': 'info',
+                                'IN_PROGRESS': 'primary',
+                                'DELIVERED': 'success',
+                                'APPROVED': 'success',
+                                'DISPUTED': 'danger',
+                                'CANCELLED': 'secondary'
+                            } %}
                             <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
                                 {{ order.status }}
                             </span>

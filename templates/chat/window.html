@@ -76,10 +76,12 @@
                     <button type="submit" class="btn btn-warning">
                         <i class="bi bi-send"></i>
                     </button>
+                    {% if current_user.id == conversation.seller_id %}
                     <button type="button" class="btn btn-outline-info" data-bs-toggle="modal"
                             data-bs-target="#offerModal" title="Send Offer">
                         <i class="bi bi-tag"></i>
                     </button>
+                    {% endif %}
                 </form>
             </div>
         </div>
