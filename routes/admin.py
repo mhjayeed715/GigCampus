@@ -205,7 +205,7 @@ def delete_user(user_id):
     # check for active orders
     active = db.execute(
         "SELECT id FROM orders WHERE (buyer_id = ? OR seller_id = ?) "
-        "AND status NOT IN ('COMPLETED', 'CANCELLED')",
+        "AND status NOT IN ('COMPLETED', 'CANCELLED', 'APPROVED', 'DISPUTED')",
         user_id, user_id
     )
     if active:

@@ -57,18 +57,18 @@ def index():
     db = get_db()
 
     buying = db.execute(
-        "SELECT o.*, g.title AS gig_title, u.username AS seller_name "
+        "SELECT o.*, COALESCE(g.title, '[Deleted Gig]') AS gig_title, u.username AS seller_name "
         "FROM orders o "
-        "JOIN gigs g ON o.gig_id = g.id "
+        "LEFT JOIN gigs g ON o.gig_id = g.id "
         "JOIN users u ON o.seller_id = u.id "
         "WHERE o.buyer_id = ? ORDER BY o.created_at DESC",
         current_user.id
     )
 
     selling = db.execute(
-        "SELECT o.*, g.title AS gig_title, u.username AS buyer_name "
+        "SELECT o.*, COALESCE(g.title, '[Deleted Gig]') AS gig_title, u.username AS buyer_name "
         "FROM orders o "
-        "JOIN gigs g ON o.gig_id = g.id "
+        "LEFT JOIN gigs g ON o.gig_id = g.id "
         "JOIN users u ON o.buyer_id = u.id "
         "WHERE o.seller_id = ? ORDER BY o.created_at DESC",
         current_user.id
@@ -83,11 +83,12 @@ def detail(order_id):
     db = get_db()
 
     order = db.execute(
-        "SELECT o.*, g.title AS gig_title, g.description AS gig_description, "
+        "SELECT o.*, COALESCE(g.title, '[Deleted Gig]') AS gig_title, "
+        "COALESCE(g.description, '') AS gig_description, "
         "buyer.username AS buyer_name, seller.username AS seller_name, "
         "buyer.ghost_count AS buyer_ghost_count "
         "FROM orders o "
-        "JOIN gigs g ON o.gig_id = g.id "
+        "LEFT JOIN gigs g ON o.gig_id = g.id "
         "JOIN users buyer ON o.buyer_id = buyer.id "
         "JOIN users seller ON o.seller_id = seller.id "
         "WHERE o.id = ?",
