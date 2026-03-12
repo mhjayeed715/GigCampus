@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+{% block title %}Edit Gig — GigCampus{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 class="mb-4"><i class="bi bi-pencil-square text-warning"></i> Edit Gig</h2>
+
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="title" class="form-label">Gig Title</label>
+                            <input type="text" class="form-control" id="title" name="title"
+                                   value="{{ gig.title }}" maxlength="120" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description"
+                                      rows="5" required>{{ gig.description }}</textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select a category...</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if cat == gig.category %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="campus_location" class="form-label">Campus Location</label>
+                            <input type="text" class="form-control" id="campus_location" name="campus_location"
+                                   value="{{ gig.campus_location or '' }}">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="price_min" class="form-label">Min Price (BDT)</label>
+                            <input type="number" class="form-control" id="price_min" name="price_min"
+                                   min="0" value="{{ gig.price_min }}" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="price_max" class="form-label">Max Price (BDT)</label>
+                            <input type="number" class="form-control" id="price_max" name="price_max"
+                                   min="0" value="{{ gig.price_max }}" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="delivery_days" class="form-label">Delivery Days</label>
+                            <input type="number" class="form-control" id="delivery_days" name="delivery_days"
+                                   min="1" max="90" value="{{ gig.delivery_days }}" required>
+                        </div>
+
+                        {% if images %}
+                        <div class="col-12">
+                            <label class="form-label">Current Images</label>
+                            <div class="row g-2 mb-2">
+                                {% for img in images %}
+                                <div class="col-md-4">
+                                    <img src="{{ url_for('static', filename='uploads/gigs/' + img.image_path) }}"
+                                         class="img-fluid rounded" alt="Gig image">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-12">
+                            <label for="images" class="form-label">
+                                <i class="bi bi-images"></i> Replace Images
+                                <small class="text-muted">(up to 3, optional — replaces all current images)</small>
+                            </label>
+                            <input type="file" class="form-control" id="images" name="images"
+                                   accept=".png,.jpg,.jpeg,.gif" multiple>
+                        </div>
+
+                        <div class="col-12 mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg flex-grow-1">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('gigs.detail', gig_id=gig.id) }}" class="btn btn-secondary btn-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

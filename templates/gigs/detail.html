@@ -159,8 +159,16 @@
             </div>
             {% else %}
             <div class="card shadow-sm mb-3">
-                <div class="card-body text-center text-muted">
-                    <i class="bi bi-info-circle"></i> This is your gig.
+                <div class="card-body">
+                    <a href="{{ url_for('gigs.edit', gig_id=gig.id) }}" class="btn btn-outline-warning w-100 mb-2">
+                        <i class="bi bi-pencil-square"></i> Edit Gig
+                    </a>
+                    <form method="POST" action="{{ url_for('gigs.delete', gig_id=gig.id) }}"
+                          onsubmit="return confirm('Are you sure you want to delete this gig?');">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash"></i> Delete Gig
+                        </button>
+                    </form>
                 </div>
             </div>
             {% endif %}

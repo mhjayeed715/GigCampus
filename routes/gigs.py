@@ -248,3 +248,131 @@ def toggle_wishlist(gig_id):
         db.execute("INSERT INTO wishlists (user_id, gig_id) VALUES (?, ?)",
                    current_user.id, gig_id)
         return jsonify({"saved": True})
+
+
+@gigs_bp.route("/gigs/<int:gig_id>/edit", methods=["GET", "POST"])
+@login_required
+@verified_required
+def edit(gig_id):
+    db = get_db()
+
+    rows = db.execute("SELECT * FROM gigs WHERE id = ?", gig_id)
+    if not rows:
+        flash_error("Gig not found.")
+        return redirect(url_for("gigs.index"))
+
+    gig = rows[0]
+    if gig["seller_id"] != current_user.id:
+        flash_error("You can only edit your own gigs.")
+        return redirect(url_for("gigs.detail", gig_id=gig_id))
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        category = request.form.get("category", "").strip()
+        price_min = request.form.get("price_min", "")
+        price_max = request.form.get("price_max", "")
+        delivery_days = request.form.get("delivery_days", "")
+        campus_location = request.form.get("campus_location", "").strip()
+
+        if not all([title, description, category, price_min, price_max, delivery_days]):
+            flash_error("Please fill in all required fields.")
+            return render_template("gigs/edit.html", gig=gig, categories=CATEGORIES)
+
+        if category not in CATEGORIES:
+            flash_error("Invalid category.")
+            return render_template("gigs/edit.html", gig=gig, categories=CATEGORIES)
+
+        try:
+            price_min_int = int(price_min)
+            price_max_int = int(price_max)
+            delivery_days_int = int(delivery_days)
+        except ValueError:
+            flash_error("Price and delivery days must be numbers.")
+            return render_template("gigs/edit.html", gig=gig, categories=CATEGORIES)
+
+        if price_min_int < 0 or price_max_int < price_min_int:
+            flash_error("Invalid price range.")
+            return render_template("gigs/edit.html", gig=gig, categories=CATEGORIES)
+
+        if delivery_days_int < 1:
+            flash_error("Delivery days must be at least 1.")
+            return render_template("gigs/edit.html", gig=gig, categories=CATEGORIES)
+
+        db.execute(
+            "UPDATE gigs SET title = ?, description = ?, category = ?, price_min = ?, "
+            "price_max = ?, delivery_days = ?, campus_location = ? WHERE id = ?",
+            title, description, category, price_min_int,
+            price_max_int, delivery_days_int, campus_location, gig_id
+        )
+
+        # handle new images if uploaded (replace old ones)
+        files = request.files.getlist("images")
+        new_files = [f for f in files if f and f.filename and allowed_file(f.filename)]
+        if new_files:
+            # delete old images from disk
+            old_images = db.execute("SELECT image_path FROM gig_images WHERE gig_id = ?", gig_id)
+            for img in old_images:
+                old_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "gigs", img["image_path"])
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            db.execute("DELETE FROM gig_images WHERE gig_id = ?", gig_id)
+
+            saved_count = 0
+            for file in new_files:
+                if saved_count >= 3:
+                    break
+                ext = file.filename.rsplit(".", 1)[1].lower()
+                random_name = f"{uuid.uuid4().hex}.{ext}"
+                save_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "gigs", random_name)
+                file.save(save_path)
+                db.execute(
+                    "INSERT INTO gig_images (gig_id, image_path) VALUES (?, ?)",
+                    gig_id, random_name
+                )
+                saved_count += 1
+
+        flash_success("Gig updated!")
+        return redirect(url_for("gigs.detail", gig_id=gig_id))
+
+    images = db.execute("SELECT * FROM gig_images WHERE gig_id = ?", gig_id)
+    return render_template("gigs/edit.html", gig=gig, images=images, categories=CATEGORIES)
+
+
+@gigs_bp.route("/gigs/<int:gig_id>/delete", methods=["POST"])
+@login_required
+def delete(gig_id):
+    db = get_db()
+
+    rows = db.execute("SELECT * FROM gigs WHERE id = ?", gig_id)
+    if not rows:
+        flash_error("Gig not found.")
+        return redirect(url_for("gigs.index"))
+
+    gig = rows[0]
+    if gig["seller_id"] != current_user.id and not current_user.is_admin:
+        flash_error("You can only delete your own gigs.")
+        return redirect(url_for("gigs.detail", gig_id=gig_id))
+
+    # check for active orders
+    active = db.execute(
+        "SELECT id FROM orders WHERE gig_id = ? AND status NOT IN ('COMPLETED', 'CANCELLED')",
+        gig_id
+    )
+    if active:
+        flash_error("Can't delete a gig with active orders.")
+        return redirect(url_for("gigs.detail", gig_id=gig_id))
+
+    # delete images from disk
+    old_images = db.execute("SELECT image_path FROM gig_images WHERE gig_id = ?", gig_id)
+    for img in old_images:
+        old_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "gigs", img["image_path"])
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    db.execute("DELETE FROM gig_images WHERE gig_id = ?", gig_id)
+    db.execute("DELETE FROM wishlists WHERE gig_id = ?", gig_id)
+    db.execute("DELETE FROM gigs WHERE id = ?", gig_id)
+
+    flash_success("Gig deleted.")
+    return redirect(url_for("gigs.index"))
