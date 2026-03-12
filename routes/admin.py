@@ -213,7 +213,39 @@ def delete_user(user_id):
         return redirect(url_for("admin.users"))
 
     username = user[0]["username"]
+
+    # clean up all related records (foreign keys are enforced)
+    # get user's gig ids first
+    user_gigs = db.execute("SELECT id FROM gigs WHERE seller_id = ?", user_id)
+    for g in user_gigs:
+        db.execute("DELETE FROM gig_images WHERE gig_id = ?", g["id"])
+        db.execute("DELETE FROM wishlists WHERE gig_id = ?", g["id"])
+
+    # orders where user is buyer or seller
+    user_orders = db.execute(
+        "SELECT id FROM orders WHERE buyer_id = ? OR seller_id = ?", user_id, user_id
+    )
+    for o in user_orders:
+        db.execute("DELETE FROM order_history WHERE order_id = ?", o["id"])
+        db.execute("DELETE FROM ghost_flags WHERE order_id = ?", o["id"])
+        db.execute("DELETE FROM disputes WHERE order_id = ?", o["id"])
+        db.execute("DELETE FROM reviews WHERE order_id = ?", o["id"])
+
+    db.execute("DELETE FROM orders WHERE buyer_id = ? OR seller_id = ?", user_id, user_id)
+
+    # conversations and messages
+    convos = db.execute(
+        "SELECT id FROM conversations WHERE buyer_id = ? OR seller_id = ?", user_id, user_id
+    )
+    for c in convos:
+        db.execute("DELETE FROM messages WHERE conversation_id = ?", c["id"])
+    db.execute("DELETE FROM conversations WHERE buyer_id = ? OR seller_id = ?", user_id, user_id)
+
+    db.execute("DELETE FROM messages WHERE sender_id = ?", user_id)
+    db.execute("DELETE FROM reviews WHERE reviewer_id = ? OR reviewee_id = ?", user_id, user_id)
+    db.execute("DELETE FROM ghost_flags WHERE buyer_id = ?", user_id)
     db.execute("DELETE FROM wishlists WHERE user_id = ?", user_id)
+    db.execute("DELETE FROM gigs WHERE seller_id = ?", user_id)
     db.execute("DELETE FROM users WHERE id = ?", user_id)
 
     flash_success(f"User '{username}' deleted.")
