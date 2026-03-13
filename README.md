@@ -1,6 +1,6 @@
 # GigCampus
 
-#### Video Demo: <URL HERE>
+#### Video Demo: https://youtu.be/qiRYTkmh1co
 
 #### Description:
 
