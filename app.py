@@ -163,16 +163,5 @@ def create_app():
         return "<br>".join(status)
 
     return app
-            "SELECT g.*, u.username AS seller_name, u.avatar AS seller_avatar, "
-            "COALESCE((SELECT AVG(r.rating) FROM reviews r WHERE r.reviewee_id = g.seller_id), 0) AS avg_rating "
-            "FROM gigs g JOIN users u ON g.seller_id = u.id "
-            "WHERE g.status = 'active' ORDER BY g.created_at DESC LIMIT 6"
-        )
-        return render_template("index.html", featured=featured)
 
-    # only start the ghost checker in the main process (werkzeug runs 2 in debug)
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-        from ghost_check import start_ghost_checker
-        start_ghost_checker(app)
 
-    return app
