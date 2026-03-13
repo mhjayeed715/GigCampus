@@ -24,10 +24,19 @@ with app.app_context():
 
     # Check if admin already exists
     existing = db.execute("SELECT id FROM users WHERE email = ?", ADMIN_EMAIL)
+    
+    # Always generate the hash using scrypt to match auth.py
+    pw_hash = generate_password_hash(ADMIN_PASSWORD, method="scrypt")
+    
     if existing:
-        print(f"[!] Admin already exists — email: {ADMIN_EMAIL}")
+        print(f"[!] Admin user found. Updating password to ensure access...")
+        # Update the password just in case it was wrong or using a different hash method
+        db.execute(
+            "UPDATE users SET password_hash = ? WHERE email = ?",
+            pw_hash, ADMIN_EMAIL
+        )
+        print("  Admin password reset successfully.")
     else:
-        pw_hash = generate_password_hash(ADMIN_PASSWORD)
         db.execute(
             """INSERT INTO users
                (username, email, password_hash, university, department,
@@ -39,9 +48,9 @@ with app.app_context():
         )
         print("=" * 45)
         print("  Admin account created successfully!")
-        print("=" * 45)
-        print(f"  Email    : {ADMIN_EMAIL}")
-        print(f"  Password : {ADMIN_PASSWORD}")
-        print("=" * 45)
-        print("  Change the password after first login.")
-        print("=" * 45)
+
+    print("=" * 45)
+    print(f"  DB Path  : {app.config['DATABASE']}")
+    print(f"  Email    : {ADMIN_EMAIL}")
+    print(f"  Password : {ADMIN_PASSWORD}")
+    print("=" * 45)
