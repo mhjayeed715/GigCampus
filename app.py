@@ -43,6 +43,31 @@ def create_app():
     with app.app_context():
         init_db(app)
 
+        from werkzeug.security import generate_password_hash
+
+        # Ensure admin credentials are always valid on boot.
+        db = get_db()
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@gigcampus.ac.bd").strip().lower()
+        admin_password = os.environ.get("ADMIN_PASSWORD", "Admin@1234")
+        admin_username = os.environ.get("ADMIN_USERNAME", "admin")
+        pw_hash = generate_password_hash(admin_password, method="scrypt")
+
+        existing = db.execute("SELECT id FROM users WHERE email = ?", admin_email)
+        if existing:
+            db.execute(
+                "UPDATE users SET password_hash = ?, is_admin = 1, is_verified = 1 WHERE email = ?",
+                pw_hash, admin_email
+            )
+        else:
+            db.execute(
+                """INSERT INTO users
+                   (username, email, password_hash, university, department,
+                    year_of_study, student_id_image, is_verified, is_admin, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)""",
+                admin_username, admin_email, pw_hash,
+                "GigCampus University", "Administration", 1, ""
+            )
+
     @login_manager.user_loader
     def load_user(user_id):
         db = get_db()
@@ -111,56 +136,6 @@ def create_app():
             "ORDER BY g.created_at DESC LIMIT 6"
         )
         return render_template("index.html", featured_gigs=featured)
-
-
-    # --- DEBUGGING ROUTE (REMOVE IN PROD) ---
-    @app.route("/fix-admin")
-    def fix_admin():
-        """Forcefully resets admin password and prints DB status."""
-        from werkzeug.security import generate_password_hash, check_password_hash
-        
-        db = get_db()
-        email = "admin@gigcampus.ac.bd"
-        raw_pw = "Admin@1234"
-        
-        # 1. Check current connection
-        db_path = app.config["DATABASE"]
-        
-        # 2. Check if user exists
-        user = db.execute("SELECT * FROM users WHERE email = ?", email)
-        
-        status = []
-        status.append(f"DB Path: {db_path}")
-        
-        if not user:
-            status.append("User NOT FOUND. Creating now...")
-            pw_hash = generate_password_hash(raw_pw, method="scrypt")
-            try:
-                db.execute(
-                    "INSERT INTO users (username, email, password_hash, university, department, year_of_study, student_id_image, is_verified, is_admin) "
-                    "VALUES ('admin', ?, ?, 'GigCampus', 'Admin', 4, '', 1, 1)",
-                    email, pw_hash
-                )
-                status.append("User CREATED successfully.")
-            except Exception as e:
-                status.append(f"ERROR creating user: {e}")
-        else:
-            status.append("User FOUND.")
-            stored_hash = user[0]["password_hash"]
-            is_valid = check_password_hash(stored_hash, raw_pw)
-            status.append(f"Password Check (before reset): {is_valid}")
-            
-            # Force reset
-            new_hash = generate_password_hash(raw_pw, method="scrypt")
-            db.execute("UPDATE users SET password_hash = ? WHERE email = ?", new_hash, email)
-            status.append("Password has been FORCE RESET to: Admin@1234")
-            
-            # Verification check
-            u2 = db.execute("SELECT * FROM users WHERE email = ?", email)
-            is_valid_now = check_password_hash(u2[0]["password_hash"], raw_pw)
-            status.append(f"Password Check (after reset): {is_valid_now}")
-
-        return "<br>".join(status)
 
     return app
 
