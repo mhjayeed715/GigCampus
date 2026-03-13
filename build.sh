@@ -3,5 +3,5 @@ set -o errexit
 
 pip install -r requirements.txt
 
-# seed admin account on first deploy
-python seed_admin.py
+# Make start script executable
+chmod +x start.sh

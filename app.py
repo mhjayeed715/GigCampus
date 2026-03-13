@@ -22,7 +22,13 @@ def create_app():
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB
 
     basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config["DATABASE"] = os.path.join(basedir, "gigcampus.db")
+
+    # Check for Render persistent disk
+    data_dir = "/var/data"
+    if os.path.exists(data_dir):
+        app.config["DATABASE"] = os.path.join(data_dir, "gigcampus.db")
+    else:
+        app.config["DATABASE"] = os.path.join(basedir, "gigcampus.db")
 
     # make sure upload dirs exist
     for sub in ["ids", "gigs", "deliverables", "avatars"]:

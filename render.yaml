@@ -3,7 +3,11 @@ services:
     name: gigcampus
     runtime: python
     buildCommand: ./build.sh
-    startCommand: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 --bind 0.0.0.0:$PORT run:app
+    startCommand: sh start.sh
+    disk:
+      name: gigcampus-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: SECRET_KEY
         generateValue: true
